@@ -1,47 +1,37 @@
 /*
  * This file is part of Technic Launcher.
- *
- * Copyright (c) 2013-2013, Technic <http://www.technicpack.net/>
- * Technic Launcher is licensed under the Spout License Version 1.
+ * Copyright (C) 2013 Syndicate, LLC
  *
  * Technic Launcher is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
- * In addition, 180 days after any changes are published, you can use the
- * software, incorporating those changes, under the terms of the MIT license,
- * as described in the Spout License Version 1.
  *
  * Technic Launcher is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License,
- * the MIT license and the Spout License Version 1 along with this program.
- * If not, see <http://www.gnu.org/licenses/> for the GNU Lesser General Public
- * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
- * including the MIT license.
+ * You should have received a copy of the GNU General Public License
+ * along with Technic Launcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.spoutcraft.launcher.entrypoint;
 
+import net.technicpack.launchercore.exception.RestfulAPIException;
+import net.technicpack.launchercore.util.Download;
+import net.technicpack.launchercore.util.DownloadListener;
+import net.technicpack.launchercore.util.OperatingSystem;
+import net.technicpack.launchercore.util.Settings;
+import net.technicpack.launchercore.util.Utils;
+import org.spoutcraft.launcher.skin.ProgressSplashScreen;
+import org.spoutcraft.launcher.updater.LauncherInfo;
+
+import javax.swing.UIManager;
 import java.io.File;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import javax.swing.UIManager;
-
-import org.spoutcraft.launcher.Settings;
-import org.spoutcraft.launcher.exceptions.RestfulAPIException;
-import org.spoutcraft.launcher.rest.RestAPI;
-import org.spoutcraft.launcher.skin.ProgressSplashScreen;
-import org.spoutcraft.launcher.util.Download;
-import org.spoutcraft.launcher.util.DownloadListener;
-import org.spoutcraft.launcher.util.Utils;
-import org.spoutcraft.launcher.util.OperatingSystem;
 
 public class Start {
 	public static void main(String[] args) {
@@ -63,9 +53,9 @@ public class Start {
 		SpoutcraftLauncher.setupLogger().info("Args: " + Arrays.toString(args));
 		if (args.length > 0 && (args[0].equals("-Mover") || args[0].equals("-Launcher"))) {
 			String[] argsCopy = new String[args.length - 1];
-			for (int i = 1; i < args.length; i++) {
-				argsCopy[i-1] = args[i];
-			}
+
+			System.arraycopy(args, 1, argsCopy, 0, args.length - 1);
+
 			if (args[0].equals("-Mover")) {
 				Mover.main(argsCopy, true);
 			} else {
@@ -80,9 +70,9 @@ public class Start {
 		int version = Integer.parseInt(SpoutcraftLauncher.getLauncherBuild());
 		String buildStream = Settings.getBuildStream();
 		int latest = version;
-		
+
 		try {
-			latest = RestAPI.getLatestLauncherBuild(buildStream);
+			latest = LauncherInfo.getLatestBuild(buildStream);
 			if (buildStream.equals("beta") && version < latest) {
 				update = true;
 			} else if (buildStream.equals("stable") && version != latest) {
@@ -91,7 +81,7 @@ public class Start {
 		} catch (RestfulAPIException e) {
 			e.printStackTrace();
 		}
-		
+
 		if (update) {
 			File codeSource = new File(URLDecoder.decode(Start.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8"));
 			File temp;
@@ -104,17 +94,18 @@ public class Start {
 			try {
 				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 			} catch (Exception e) {
+				e.printStackTrace();
 			}
 
 			ProgressSplashScreen splash = new ProgressSplashScreen();
-			Download download = new Download(RestAPI.getLauncherDownloadURL(latest, !codeSource.getName().endsWith(".exe")), temp.getPath());
+			Download download = new Download(LauncherInfo.getDownloadURL(latest, !codeSource.getName().endsWith(".exe")), temp.getPath());
 			download.setListener(new LauncherDownloadListener(splash));
 			download.run();
 
 			ProcessBuilder processBuilder = new ProcessBuilder();
 			ArrayList<String> commands = new ArrayList<String>();
 			if (!codeSource.getName().endsWith(".exe")) {
-				if (OperatingSystem.getOS().isWindows()) {
+				if (OperatingSystem.getOperatingSystem().equals(OperatingSystem.WINDOWS)) {
 					commands.add("javaw");
 				} else {
 					commands.add("java");
@@ -144,13 +135,14 @@ public class Start {
 
 	private static class LauncherDownloadListener implements DownloadListener {
 		private final ProgressSplashScreen screen;
+
 		LauncherDownloadListener(ProgressSplashScreen screen) {
 			this.screen = screen;
 		}
 
 		@Override
 		public void stateChanged(String text, float progress) {
-			screen.updateProgress((int)progress);
+			screen.updateProgress((int) progress);
 		}
 	}
 }
