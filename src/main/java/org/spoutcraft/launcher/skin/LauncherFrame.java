@@ -29,7 +29,6 @@ import net.technicpack.launchercore.util.DownloadUtils;
 import net.technicpack.launchercore.util.ImageUtils;
 import net.technicpack.launchercore.util.ResourceUtils;
 import net.technicpack.launchercore.util.Utils;
-import org.spoutcraft.launcher.InstallThread;
 import org.spoutcraft.launcher.Launcher;
 import org.spoutcraft.launcher.entrypoint.SpoutcraftLauncher;
 import org.spoutcraft.launcher.skin.components.BackgroundImage;
@@ -139,15 +138,13 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 		name.setBounds(loginArea.getX() + 15, loginArea.getY() + 15, 110, 24);
 		name.setFont(minecraft);
 		name.addKeyListener(this);
-		if (Launcher.getUsers().getLastUser() != null) {
-			name.setText(Launcher.getUsers().getLastUser());
-		}
 
 		// Setup password box
 		pass = new LitePasswordBox(this, "Password...");
 		pass.setBounds(loginArea.getX() + 15, loginArea.getY() + name.getHeight() + 20, 110, 24);
 		pass.setFont(minecraft);
 		pass.addKeyListener(this);
+
 
 		// Setup login button
 		login = new LiteButton("Launch");
@@ -170,6 +167,12 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 		remember.setHorizontalTextPosition(SwingConstants.RIGHT);
 		remember.setIconTextGap(10);
 		remember.addKeyListener(this);
+
+		if (Launcher.getUsers().getLastUser() != null) {
+			name.setText(Launcher.getUsers().getLastUser());
+			pass.setText("PASSWORD");
+			remember.setSelected(true);
+		}
 
 		// Technic logo
 		JLabel logo = new JLabel();
@@ -438,7 +441,8 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 
 	public void updateFaces() {
 		for (String user : userButtons.keySet()) {
-			BufferedImage image = getUserImage(user);
+			String userDisplayName = Launcher.getUsers().getUser(user).getDisplayName();
+			BufferedImage image = getUserImage(userDisplayName);
 			if (image != null) {
 				userButtons.get(user).updateIcon(image);
 			}
@@ -450,7 +454,7 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 		assets.mkdirs();
 		File file = new File(assets, user + ".png");
 		try {
-			Download download = DownloadUtils.downloadFile("http://skins.technicpack.net/helm/" + user + "/100", file.getAbsolutePath());
+			Download download = DownloadUtils.downloadFile("http://skins.technicpack.net/helm/" + user + "/100", file.getName(), file.getAbsolutePath());
 			if (download.getResult().equals(Download.Result.SUCCESS)) {
 				return ImageIO.read(download.getOutFile());
 			}
