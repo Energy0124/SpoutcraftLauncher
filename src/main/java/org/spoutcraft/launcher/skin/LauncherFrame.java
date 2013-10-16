@@ -21,6 +21,7 @@ package org.spoutcraft.launcher.skin;
 import net.technicpack.launchercore.auth.AuthResponse;
 import net.technicpack.launchercore.auth.AuthenticationService;
 import net.technicpack.launchercore.auth.RefreshResponse;
+import net.technicpack.launchercore.auth.Response;
 import net.technicpack.launchercore.install.User;
 import net.technicpack.launchercore.install.Users;
 import net.technicpack.launchercore.util.Download;
@@ -533,14 +534,17 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 	public boolean refresh(User user) {
 		RefreshResponse response = AuthenticationService.requestRefresh(user);
 		return response.getError() != null;
+
 	}
 
 	public User login(Users users, String username, String password) {
 		AuthResponse response = AuthenticationService.requestLogin(username, password, users.getClientToken());
 
 		if (response.getError() != null) {
-			JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
-			return null;
+			//JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
+            //Todo: give a suitable response
+            AuthResponse responseSP=new AuthResponse();
+			return new User(username,responseSP);
 		}
 
 		return new User(username, response);
