@@ -45,8 +45,8 @@ import java.util.logging.Logger;
 
 public class SpoutcraftLauncher {
 	public static StartupParameters params;
-	protected static RotatingFileHandler handler = null;
 	protected static Console console;
+	private static RotatingFileHandler handler = null;
 	private static Logger logger = null;
 
 	public static void main(String[] args) {
@@ -69,7 +69,9 @@ public class SpoutcraftLauncher {
 		directories.setSplashScreen(splash);
 		setLookAndFeel();
 
+		console = new Console(params.isConsole());
 		SpoutcraftLauncher.logger = setupLogger();
+		console.setRotatingFileHandler(SpoutcraftLauncher.handler);
 
 		int launcherBuild = parseInt(getLauncherBuild(), -1);
 		logger.info("------------------------------------------");
@@ -77,8 +79,6 @@ public class SpoutcraftLauncher {
 		logger.info("Launcher Build: " + launcherBuild);
 
 		params.logParameters(logger);
-
-		console = new Console(params.isConsole());
 
 		Runtime.getRuntime().addShutdownHook(new ShutdownThread(console));
 
@@ -116,7 +116,7 @@ public class SpoutcraftLauncher {
 	}
 
 	protected static Logger setupLogger() {
-		final Logger logger = Logger.getLogger("net.technicpack.launcher.Main");
+		final Logger logger = Utils.getLogger();
 		File logDirectory = new File(Utils.getLauncherDirectory(), "logs");
 		if (!logDirectory.exists()) {
 			logDirectory.mkdir();

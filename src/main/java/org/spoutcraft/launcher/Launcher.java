@@ -23,6 +23,7 @@ import net.technicpack.launchercore.install.AddPack;
 import net.technicpack.launchercore.install.InstalledPack;
 import net.technicpack.launchercore.install.InstalledPacks;
 import net.technicpack.launchercore.install.PackRefreshListener;
+import net.technicpack.launchercore.install.ResourceInstaller;
 import net.technicpack.launchercore.install.User;
 import net.technicpack.launchercore.install.Users;
 import net.technicpack.launchercore.restful.PackInfo;
@@ -33,10 +34,10 @@ import net.technicpack.launchercore.restful.solder.Solder;
 import net.technicpack.launchercore.restful.solder.SolderConstants;
 import net.technicpack.launchercore.restful.solder.SolderPackInfo;
 import net.technicpack.launchercore.util.Utils;
+import org.spoutcraft.launcher.entrypoint.SpoutcraftLauncher;
 import org.spoutcraft.launcher.skin.LauncherFrame;
 
 import javax.swing.JOptionPane;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 
 public class Launcher implements PackRefreshListener {
@@ -45,13 +46,13 @@ public class Launcher implements PackRefreshListener {
 	private Users users;
 	private InstalledPacks installedPacks;
 	private InstallThread installThread;
+	private ResourceInstaller assetInstaller;
 
 	public Launcher() {
 		if (Launcher.instance != null) {
 			throw new IllegalArgumentException("You can't have a duplicate launcher");
 		}
 
-		Utils.getLogger().addHandler(new ConsoleHandler());
 		instance = this;
 
 		users = Users.load();
@@ -67,19 +68,117 @@ public class Launcher implements PackRefreshListener {
 		}
 
 		this.launcherFrame = new LauncherFrame();
+		this.assetInstaller = new ResourceInstaller();
 
 		loadDefaultPacks();
 		loadInstalledPacks();
+		loadForcedPack();
 		installedPacks.add(new AddPack());
 
-		launcherFrame.updateFaces();
-//		launcherFrame.getNews().loadArticles();
+		Thread assets = new Thread("Assets Thread") {
+			@Override
+			public void run() {
+				instance.updateAssets();
+			}
+		};
+
+		Thread faces = new Thread("Faces Thread") {
+			@Override
+			public void run() {
+				launcherFrame.updateFaces();
+			}
+		};
+
+		Thread news = new Thread("News Thread") {
+			@Override
+			public void run() {
+				launcherFrame.getNews().loadArticles();
+			}
+		};
+
+		faces.start();
+		news.start();
+		assets.start();
 
 		JOptionPane.showMessageDialog(launcherFrame, "Warning! This is an early beta of a complete back-end rewrite.\n" +
 				"Your mod installs may be corrupted or worse.\n" +
 				"Use at your own risk.\n\n" +
 				"Known issue: Yogbox and Hack/Mine DO NOT WORK.",
 				"Warning! Beta Build of Launcher!", JOptionPane.WARNING_MESSAGE);
+	}
+
+	private void updateAssets() {
+		assetInstaller.updateResources();
+	}
+
+	private void loadInstalledPacks() {
+		for (final InstalledPack pack : installedPacks.getPacks()) {
+			if (pack.isPlatform()) {
+				Thread thread = new Thread(pack.getName() + " Info Loading Thread") {
+					@Override
+					public void run() {
+						try {
+							String name = pack.getName();
+							PlatformPackInfo platformPackInfo = PlatformPackInfo.getPlatformPackInfo(name);
+							PackInfo info = platformPackInfo;
+							if (platformPackInfo.hasSolder()) {
+								SolderPackInfo solderPackInfo = SolderPackInfo.getSolderPackInfo(platformPackInfo.getSolder(), name);
+								Solder solder = RestObject.getRestObject(Solder.class, platformPackInfo.getSolder());
+								solder.setUrl(platformPackInfo.getSolder());
+								solderPackInfo.setSolder(solder);
+								info = solderPackInfo;
+							}
+
+							info.getLogo();
+							info.getIcon();
+							info.getBackground();
+							pack.setInfo(info);
+							pack.setRefreshListener(instance);
+							launcherFrame.getSelector().redraw(false);
+						} catch (RestfulAPIException e) {
+							Utils.getLogger().log(Level.WARNING, "Unable to load platform pack " + pack.getName(), e);
+						}
+					}
+				};
+				thread.start();
+			}
+		}
+	}
+
+	private void loadForcedPack() {
+		if (SpoutcraftLauncher.params != null && SpoutcraftLauncher.params.getSolderPack() != null) {
+			final String solder = SpoutcraftLauncher.params.getSolderPack();
+			Thread thread = new Thread("Forced Solder Thread - " + solder) {
+
+				@Override
+				public void run() {
+					try {
+						SolderPackInfo info = SolderPackInfo.getSolderPackInfo(solder);
+						if (info == null) {
+							throw new RestfulAPIException();
+						}
+
+						info.getLogo();
+						info.getIcon();
+						info.getBackground();
+
+						InstalledPacks packs = Launcher.getInstalledPacks();
+						if (packs.getInstalledPacks().containsKey(info.getName())) {
+							InstalledPack pack = installedPacks.get(info.getName());
+							pack.setInfo(info);
+						} else {
+							InstalledPack pack = new InstalledPack(info.getName(), true);
+							pack.setRefreshListener(instance);
+							pack.setInfo(info);
+							packs.add(pack);
+						}
+					} catch (RestfulAPIException e) {
+						Utils.getLogger().log(Level.WARNING, "Unable to load forced solder pack " + solder, e);
+					}
+				}
+			};
+			thread.start();
+		}
 	}
 
 	private void loadDefaultPacks() {
@@ -123,40 +222,6 @@ public class Launcher implements PackRefreshListener {
 
 	public static Launcher getInstance() {
 		return instance;
-	}
-
-	private void loadInstalledPacks() {
-		for (final InstalledPack pack : installedPacks.getPacks()) {
-			if (pack.isPlatform()) {
-				Thread thread = new Thread(pack.getName() + " Info Loading Thread") {
-					@Override
-					public void run() {
-						try {
-							String name = pack.getName();
-							PlatformPackInfo platformPackInfo = PlatformPackInfo.getPlatformPackInfo(name);
-							PackInfo info = platformPackInfo;
-							if (platformPackInfo.hasSolder()) {
-								SolderPackInfo solderPackInfo = SolderPackInfo.getSolderPackInfo(platformPackInfo.getSolder(), name);
-								Solder solder = RestObject.getRestObject(Solder.class, platformPackInfo.getSolder());
-								solder.setUrl(platformPackInfo.getSolder());
-								solderPackInfo.setSolder(solder);
-								info = solderPackInfo;
-							}
-
-							info.getLogo();
-							info.getIcon();
-							info.getBackground();
-							pack.setInfo(info);
-							pack.setRefreshListener(instance);
-							launcherFrame.getSelector().redraw(false);
-						} catch (RestfulAPIException e) {
-							Utils.getLogger().log(Level.WARNING, "Unable to load platform pack " + pack.getName(), e);
-						}
-					}
-				};
-				thread.start();
-			}
-		}
 	}
 
 	public static void launch(User user, InstalledPack pack, String build) {
