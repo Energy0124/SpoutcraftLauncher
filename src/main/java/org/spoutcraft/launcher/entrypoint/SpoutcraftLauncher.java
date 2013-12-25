@@ -30,11 +30,15 @@ import org.spoutcraft.launcher.log.DateOutputFormatter;
 import org.spoutcraft.launcher.log.LoggerOutputStream;
 import org.spoutcraft.launcher.log.RotatingFileHandler;
 import org.spoutcraft.launcher.settings.LauncherDirectories;
+import org.spoutcraft.launcher.skin.ErrorDialog;
 import org.spoutcraft.launcher.skin.LauncherFrame;
+import org.spoutcraft.launcher.skin.LoginFrame;
 import org.spoutcraft.launcher.skin.SplashScreen;
 import org.spoutcraft.launcher.util.ShutdownThread;
 
-import javax.swing.UIManager;
+import javax.swing.*;
+import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.plaf.metal.OceanTheme;
 import java.awt.Toolkit;
 import java.io.File;
 import java.io.PrintStream;
@@ -48,6 +52,7 @@ public class SpoutcraftLauncher {
 	protected static Console console;
 	private static RotatingFileHandler handler = null;
 	private static Logger logger = null;
+	private static ErrorDialog errorDialog = null;
 
 	public static void main(String[] args) {
 		long start = System.currentTimeMillis();
@@ -57,9 +62,6 @@ public class SpoutcraftLauncher {
 		// Prefer IPv4
 		System.setProperty("java.net.preferIPv4Stack", "true");
 
-		// Tell forge 1.5 to download from our mirror instead
-		System.setProperty("fml.core.libraries.mirror", "http://mirror.technicpack.net/Technic/lib/fml/%s");
-
 		params = setupParameters(args);
 
 		cleanup();
@@ -67,6 +69,8 @@ public class SpoutcraftLauncher {
 		SplashScreen splash = new SplashScreen(Toolkit.getDefaultToolkit().getImage(SplashScreen.class.getResource("/org/spoutcraft/launcher/resources/splash.png")));
 		splash.setVisible(true);
 		directories.setSplashScreen(splash);
+
+		MetalLookAndFeel.setCurrentTheme(new OceanTheme());
 		setLookAndFeel();
 
 		console = new Console(params.isConsole());
@@ -84,10 +88,11 @@ public class SpoutcraftLauncher {
 
 		// Set up the launcher and load login frame
 		Launcher launcher = new Launcher();
-		LauncherFrame frame = Launcher.getFrame();
+
+		LoginFrame frame = Launcher.getLoginFrame();
 
 		splash.dispose();
-		frame.setVisible(true);
+		frame.attemptStartup();
 
 		logger.info("Launcher took: " + (System.currentTimeMillis() - start) + "ms to start");
 	}
@@ -144,6 +149,19 @@ public class SpoutcraftLauncher {
 			@Override
 			public void uncaughtException(Thread t, Throwable e) {
 				logger.log(Level.SEVERE, "Unhandled Exception in " + t, e);
+
+				if (errorDialog == null) {
+					LauncherFrame frame = null;
+
+					try {
+						frame = Launcher.getFrame();
+					} catch (Exception ex) {
+						//This can happen if we have a very early crash- before Launcher initializes
+					}
+
+					errorDialog = new ErrorDialog(frame, e);
+					errorDialog.setVisible(true);
+				}
 			}
 		});
 
