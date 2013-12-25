@@ -21,7 +21,8 @@ import static net.technicpack.launchercore.util.ResourceUtils.getResourceAsStrea
 public class LoginFrame extends JFrame implements KeyListener, ActionListener, MouseListener, MouseMotionListener {
 	public static final Color CHARCOAL = new Color(45, 45, 45);
 
-	private JLabel nameLabel;
+
+    private JLabel nameLabel;
 	private JTextField name;
 	private JComboBox nameSelect;
 	private JLabel passLabel;
@@ -31,6 +32,7 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 	private JLabel platformImage;
 	private JLabel instructionText;
 	private JCheckBox rememberAccount;
+    private JCheckBox onlineMode;
 
 	private UserCellRenderer userRenderer;
 	private UserCellEditor userEditor;
@@ -45,14 +47,16 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 	private int dragGripY;
 
 	private static final int FRAME_WIDTH = 347;
-	private static final int FRAME_HEIGHT = 411;
+	private static final int FRAME_HEIGHT = 441;
 
 	private static final String CLOSE_ACTION = "close";
 	private static final String LOGIN_ACTION = "login";
 	private static final String CHANGE_USER = "change_user";
 	private static final String TOGGLE_REMEMBER = "remember";
+    private static final String TOGGLE_ONLINE_MODE = "onlineMode";
+    private static boolean isOnlineMode=false;
 
-	public LoginFrame() {
+    public LoginFrame() {
 		//UI Setup
 		initComponents();
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -176,10 +180,25 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 		rememberAccount.setActionCommand(TOGGLE_REMEMBER);
 		rememberAccount.addKeyListener(this);
 
+        // "Enable Online Mode"
+        onlineMode = new JCheckBox("Enable Online Mode", false);
+        onlineMode.setFont(smallFont);
+        onlineMode.setForeground(Color.white);
+        onlineMode.setOpaque(false);
+        onlineMode.setBounds(25, 275, 300, 30);
+        onlineMode.setHorizontalTextPosition(SwingConstants.LEFT);
+        onlineMode.setHorizontalAlignment(SwingConstants.RIGHT);
+        onlineMode.setIconTextGap(12);
+        onlineMode.addActionListener(this);
+        onlineMode.setActionCommand(TOGGLE_ONLINE_MODE);
+        //onlineMode.addKeyListener(this);
+
+
+
 		//Login button
 		login = new BlueButton("LOGIN");
 		login.setFont(veryLargeFont);
-		login.setBounds(25, 290, FRAME_WIDTH - 50, 40);
+		login.setBounds(25, 320, FRAME_WIDTH - 50, 40);
 		login.setActionCommand(LOGIN_ACTION);
 		login.addActionListener(this);
 
@@ -220,7 +239,8 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 		contentPane.add(dash);
 		contentPane.add(login);
 		contentPane.add(rememberAccount);
-		contentPane.add(instructionText);
+        contentPane.add(onlineMode);
+        contentPane.add(instructionText);
 		contentPane.add(nameLabel);
 		contentPane.add(passLabel);
 		contentPane.add(name);
@@ -399,12 +419,16 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 		try {
 			RefreshResponse response = AuthenticationService.requestRefresh(loginUser);
 			if (response.getError() != null) {
+                 if(isOnlineMode){
+				    if (notifyUserOfFailure)
+					    JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
 
-				if (notifyUserOfFailure)
-					JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
-
-				rejected = true;
-				loginUser = null;
+				    rejected = true;
+				    loginUser = null;
+                 }else {
+                    loginUser = new User(user.getUsername());
+                    Launcher.getUsers().addUser(loginUser);
+                 }
 			} else {
 				//Refresh user from response
 				loginUser = new User(user.getUsername(), response);
@@ -464,18 +488,29 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 			response = AuthenticationService.requestLogin(username, new String(this.pass.getPassword()), Launcher.getUsers().getClientToken());
 
 			if (response.getError() != null) {
-				JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
-				return;
+				if(isOnlineMode){
+                    JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
+				    return;
+                }
 			}
 		} catch (AuthenticationNetworkFailureException ex) {
 			//Login servers are inaccessible, but we only give the option to play offline with pre-cached users
 			ex.printStackTrace();
 			JOptionPane.showMessageDialog(this, "An error occurred while attempting to reach Minecraft.net", "Auth Servers Inaccessible", JOptionPane.ERROR_MESSAGE);
-			return;
+            if(isOnlineMode){return;}
 		}
 
-		//Create an online user with the received data
-		final User clearedUser = new User(username, response);
+        final User clearedUser;
+        if(isOnlineMode){
+
+		    //Create an online user with the received data if  online mode is enabled
+		   clearedUser = new User(username, response);
+        } else {
+            //Create an online user with the received data if  offline mode is enabled
+            clearedUser = new User(username);
+
+        }
+
 
 		if (rememberAccount.isSelected()) {
 			//Add user to our list of cached users if checkbox is true
@@ -550,7 +585,13 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 				if (!rememberAccount.isSelected() && nameSelect.isVisible() && nameSelect.getSelectedItem() instanceof User) {
 					forgetUser((User)nameSelect.getSelectedItem());
 				}
-			}
+			} else if(command.equals(TOGGLE_ONLINE_MODE)){
+                if(onlineMode.isSelected()){
+                    isOnlineMode=true;
+                } else{
+                    isOnlineMode=false;
+                }
+            }
 		}
 	}
 
