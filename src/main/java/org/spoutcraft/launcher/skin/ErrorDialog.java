@@ -20,8 +20,7 @@ package org.spoutcraft.launcher.skin;
 
 import org.jdesktop.layout.GroupLayout;
 import org.jdesktop.layout.LayoutStyle;
-import org.spoutcraft.launcher.Launcher;
-import net.technicpack.launchercore.util.Settings;
+import org.spoutcraft.launcher.launcher.Launcher;
 import org.spoutcraft.launcher.entrypoint.SpoutcraftLauncher;
 import org.spoutcraft.launcher.util.DesktopUtils;
 import org.spoutcraft.launcher.util.PasteBinAPI;
