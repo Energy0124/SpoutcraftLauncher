@@ -560,9 +560,10 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 
 	@Override
 	public void userChanged(User user) {
-		if (user == null)
+		if (user == null) {
 			this.setVisible(true);
-		else
+            refreshUsers();
+        } else
 			this.setVisible(false);
 	}
 }
