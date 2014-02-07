@@ -393,11 +393,11 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() instanceof JComponent) {
-			action(e.getActionCommand(), (JComponent) e.getSource());
+			action(e.getActionCommand());
 		}
 	}
 
-	private void action(String action, JComponent c) {
+	private void action(String action) {
 		if (action.equals(OPTIONS_ACTION)) {
 			if (launcherOptions == null || !launcherOptions.isVisible()) {
 				launcherOptions = new LauncherOptions();
@@ -410,7 +410,7 @@ public class LauncherFrame extends JFrame implements ActionListener, KeyListener
 				getSelector().removePack();
 			}
 		} else if (action.equals(PACK_OPTIONS_ACTION)) {
-			if (packOptions == null || !packOptions.isVisible()) {
+			if (getSelector().getSelectedPack().getInfo() != null && (packOptions == null || !packOptions.isVisible())) {
 				System.out.println("Opening options for " + getSelector().getSelectedPack());
 				packOptions = new ModpackOptions(getSelector().getSelectedPack(), mPackList);
 				packOptions.setModal(true);
