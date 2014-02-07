@@ -386,7 +386,7 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 				    rejected = true;
                 }else {
                     loginUser = new User(user.getUsername());
-                    Launcher.getUsers().addUser(loginUser);
+                    //Launcher.getUsers().addUser(loginUser);
                 }
 			}
 		} catch (AuthenticationNetworkFailureException ex) {
@@ -511,7 +511,13 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 				if (!rememberAccount.isSelected() && nameSelect.isVisible() && nameSelect.getSelectedItem() instanceof User) {
 					forgetUser((User)nameSelect.getSelectedItem());
 				}
-			}
+			} else if(command.equals(TOGGLE_ONLINE_MODE)){
+                if(onlineMode.isSelected()){
+                    isOnlineMode=true;
+                } else{
+                    isOnlineMode=false;
+                }
+            }
 		}
 	}
 

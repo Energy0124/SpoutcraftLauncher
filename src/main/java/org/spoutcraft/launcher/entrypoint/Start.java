@@ -70,8 +70,13 @@ public class Start {
 
 		Utils.getLauncherDirectory();
 		boolean update = false;
+        int version;
+		if("${buildNumber}".equals(SpoutcraftLauncher.getLauncherBuild())){
+            version=0;
+        }else {
+            version = Integer.parseInt(SpoutcraftLauncher.getLauncherBuild());
+        }
 
-		int version = Integer.parseInt(SpoutcraftLauncher.getLauncherBuild());
 		String buildStream = Settings.getBuildStream();
 		int latest = version;
 
