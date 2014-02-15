@@ -447,7 +447,7 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
             } else if (response.getError() != null) {
 				JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
 				return;
-			}    
+			}
             }
 		} catch (AuthenticationNetworkFailureException ex) {
 			//Login servers are inaccessible, but we only give the option to play offline with pre-cached users
@@ -458,7 +458,6 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 
 		//Create an online user with the received data
 		User clearedUser;
-        
         if(isOnlineMode){
 
 		    //Create an online user with the received data if  online mode is enabled

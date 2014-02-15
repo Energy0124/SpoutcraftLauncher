@@ -55,7 +55,7 @@ public class InstalledPacks implements IPackStore {
 
 		try {
 			String json = FileUtils.readFileToString(installedPacks, Charset.forName("UTF-8"));
-            InstalledPacks parsedList = Utils.getGson().fromJson(json, InstalledPacks.class);
+			InstalledPacks parsedList = Utils.getGson().fromJson(json, InstalledPacks.class);
 
             if (parsedList != null) {
                 for(String packName : parsedList.getPackNames()) {
@@ -65,6 +65,7 @@ public class InstalledPacks implements IPackStore {
                         pack.setMirrorStore(mirrorStore);
                     }
                 }
+
                 return parsedList;
             } else
                 return emptyList;
