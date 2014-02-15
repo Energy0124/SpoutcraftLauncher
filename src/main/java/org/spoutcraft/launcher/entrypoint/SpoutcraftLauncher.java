@@ -19,12 +19,16 @@
 package org.spoutcraft.launcher.entrypoint;
 
 import com.beust.jcommander.JCommander;
+import net.technicpack.launchercore.install.user.UserModel;
+import net.technicpack.launchercore.mirror.MirrorStore;
+import net.technicpack.launchercore.mirror.secure.rest.JsonWebSecureMirror;
 import net.technicpack.launchercore.util.Directories;
 import net.technicpack.launchercore.util.OperatingSystem;
 import net.technicpack.launchercore.util.Utils;
 import org.apache.commons.io.IOUtils;
 import org.spoutcraft.launcher.launcher.Launcher;
 import org.spoutcraft.launcher.StartupParameters;
+import org.spoutcraft.launcher.launcher.Users;
 import org.spoutcraft.launcher.log.Console;
 import org.spoutcraft.launcher.log.DateOutputFormatter;
 import org.spoutcraft.launcher.log.LoggerOutputStream;
@@ -34,6 +38,7 @@ import org.spoutcraft.launcher.skin.ErrorDialog;
 import org.spoutcraft.launcher.skin.LauncherFrame;
 import org.spoutcraft.launcher.skin.SplashScreen;
 import org.spoutcraft.launcher.util.ShutdownThread;
+import org.spoutcraft.launcher.util.TechnicLogFormatter;
 
 import javax.swing.*;
 import javax.swing.plaf.metal.MetalLookAndFeel;
@@ -126,7 +131,7 @@ public class SpoutcraftLauncher {
 		File logs = new File(logDirectory, "techniclauncher_%D.log");
 		RotatingFileHandler fileHandler = new RotatingFileHandler(logs.getPath());
 
-		fileHandler.setFormatter(new DateOutputFormatter(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")));
+		fileHandler.setFormatter(new TechnicLogFormatter());
 
 		for (Handler h : logger.getHandlers()) {
 			logger.removeHandler(h);

@@ -23,7 +23,6 @@ import net.technicpack.launchercore.util.OperatingSystem;
 import net.technicpack.launchercore.util.Settings;
 import org.spoutcraft.launcher.entrypoint.SpoutcraftLauncher;
 import org.spoutcraft.launcher.skin.SplashScreen;
-import org.spoutcraft.launcher.util.MigrateUtils;
 import net.technicpack.launchercore.util.ZipUtils;
 
 import javax.swing.JFileChooser;
@@ -73,12 +72,7 @@ public class LauncherDirectories extends Directories {
 			throw new RuntimeException("The working directory could not be created: " + workDir);
 		}
 
-		try {
-			MigrateUtils.migrateSettings();
-		} catch (Exception e) {
-			//Ignore
-			e.printStackTrace();
-		}
+        Settings.load();
 
 		if (SpoutcraftLauncher.params != null && SpoutcraftLauncher.params.isPortable()) {
 			return;

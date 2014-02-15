@@ -440,13 +440,15 @@ public class LoginFrame extends JFrame implements KeyListener, ActionListener, M
 		try {
 			//Attempt the log the user in with the data from this form
 			response = AuthenticationService.requestLogin(username, new String(this.pass.getPassword()), mUserModel.getClientToken());
-
-			if (response.getError() != null) {
-				if(isOnlineMode){
-                    JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
-				    return;
-                }
-			}
+            if(isOnlineMode){
+            if (response == null) {
+                JOptionPane.showMessageDialog(this, "Invalid credentials. Invalid username or password.", "Auth Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            } else if (response.getError() != null) {
+				JOptionPane.showMessageDialog(this, response.getErrorMessage(), response.getError(), JOptionPane.ERROR_MESSAGE);
+				return;
+			}    
+            }
 		} catch (AuthenticationNetworkFailureException ex) {
 			//Login servers are inaccessible, but we only give the option to play offline with pre-cached users
 			ex.printStackTrace();
